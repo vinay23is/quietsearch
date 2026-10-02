@@ -34,6 +34,16 @@ Requirements: Docker with the Compose v2 plugin, and `openssl`.
 
 Operations, logs and troubleshooting are covered in [docs/runbook.md](docs/runbook.md).
 
+## Search API and CLI
+
+Results are also available as JSON (`/search?q=...&format=json`). The
+Python CLI in `client/` wraps the API with proper error handling; see
+[docs/api.md](docs/api.md).
+
+```bash
+python3 client/search_client.py -c it -n 5 "python asyncio"
+```
+
 ## Repository layout
 
 | Path | Purpose |

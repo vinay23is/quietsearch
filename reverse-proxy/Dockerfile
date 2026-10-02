@@ -5,7 +5,9 @@
 # runtime, so this two-stage build compiles a custom binary with xcaddy and
 # copies it into the official runtime image.
 
-ARG CADDY_VERSION
+# Overridden by CADDY_VERSION in .env (passed as a build argument by
+# docker-compose.yml); the default only keeps standalone builds valid.
+ARG CADDY_VERSION=2.10.2
 
 FROM docker.io/library/caddy:${CADDY_VERSION}-builder-alpine AS builder
 # Pinned to a commit: the module has no recent tagged releases, and pinning

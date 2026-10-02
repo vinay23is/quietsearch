@@ -49,3 +49,23 @@ Notes:
 - Google answered "access denied" to an explicit `!go` query.
 - Videos: duckduckgo videos and vimeo timed out at 3s on the first video query
   after a restart.
+
+## CLI client against the local stack
+
+Date: 2026-10-02. `client/search_client.py`, Python 3.9 (macOS system), TLS
+verified against Caddy's exported local root certificate.
+
+| Metric | Value | Method |
+|---|---|---|
+| Unit tests | 12/12 passed in 0.006s | `python -m unittest discover -s tests` |
+| `-c it "python asyncio"` | 1.29s, 60 results (stackoverflow, mdn, github, docker hub) | CLI summary line |
+| `"distributed systems"` (general) | 3.36s, 0 results + 2 infoboxes | CLI summary line |
+| Wrong password | HTTP 401 → exit code 3 | CLI |
+
+Notes:
+- By this point the home IP was blocked by all three general web engines:
+  duckduckgo returned a CAPTCHA (SearXNG suspends it for 1 hour), brave
+  HTTP 429, bing a connection error. Repeated test runs from one residential
+  IP are enough to trigger this; it's the main operational risk of a
+  single-IP metasearch instance. Compare from AWS (Phase 7).
+
