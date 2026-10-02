@@ -1,0 +1,65 @@
+# Quietsearch reverse proxy (Caddy v2)
+# Mounted at /etc/caddy/Caddyfile. {$VAR} values are read from the container
+# environment, which docker-compose.yml fills from .env.
+# Reference: https://caddyserver.com/docs/caddyfile
+{
+	# Contact address for the Let's Encrypt account.
+	email {$ACME_EMAIL}
+
+	# Turn off the admin API (normally localhost:2019). Nothing needs to
+	# reconfigure Caddy at runtime; config changes are applied by restarting
+	# the container.
+	admin off
+
+	servers {
+		# HTTP/1.1 and HTTP/2 over TCP only. HTTP/3 would need UDP 443 opened
+		# in every firewall layer, for little benefit on a single-user instance.
+		protocols h1 h2
+	}
+}
+
+# Site block. Caddy automatically:
+#   - obtains and renews a certificate for this hostname (from Let's Encrypt
+#     for a public domain, or from its own local CA for "localhost")
+#   - redirects http:// to https:// on port 80
+{$SEARXNG_HOSTNAME} {
+	# Docker healthchecks and uptime probes can call /healthz without credentials.
+	# It returns only "OK".
+	@health path /healthz
+	handle @health {
+		reverse_proxy searxng:8080
+	}
+
+	handle {
+		# The whole instance requires authentication. Unknown visitors and
+		# scanners never reach SearXNG or cause upstream requests.
+		basic_auth {
+			{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+		}
+		reverse_proxy searxng:8080
+	}
+
+	encode zstd gzip
+
+	header {
+		# Browsers must use HTTPS for this host for one year.
+		Strict-Transport-Security "max-age=31536000"
+		# Don't guess content types from response bodies.
+		X-Content-Type-Options "nosniff"
+		# Don't allow this site to be framed (clickjacking).
+		X-Frame-Options "DENY"
+		# Never send this site's URLs (which contain the query) to other sites.
+		Referrer-Policy "no-referrer"
+		# Deny powerful browser features this site doesn't use.
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		# Restrict where scripts, styles, frames and connections may load from.
+		# frame-src allows SearXNG's embedded video players.
+		Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://www.dailymotion.com"
+		# Don't advertise server software.
+		-Server
+	}
+
+	# No access log on purpose. Caddy writes no per-request logs unless a
+	# "log" directive is present, so the queries in URLs never reach disk here.
+	# Errors and certificate events still go to the container log.
+}

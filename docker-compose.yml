@@ -1,0 +1,118 @@
+# Quietsearch: SearXNG behind a TLS-terminating reverse proxy.
+#
+#   Internet ──443/80──▶ caddy ──(frontend)──▶ searxng ──(backend, internal)──▶ valkey
+#
+# Only the caddy service publishes ports. SearXNG and Valkey are reachable
+# solely over the private Docker networks defined at the bottom of this file.
+
+name: quietsearch
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  caddy:
+    image: docker.io/library/caddy:${CADDY_VERSION:-2.10-alpine}
+    container_name: quietsearch-caddy
+    restart: unless-stopped
+    depends_on:
+      searxng:
+        condition: service_healthy
+    ports:
+      - "${PUBLISH_ADDR:-127.0.0.1}:80:80"
+      - "${PUBLISH_ADDR:-127.0.0.1}:443:443"
+    environment:
+      SEARXNG_HOSTNAME: ${SEARXNG_HOSTNAME:?set SEARXNG_HOSTNAME in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?set BASIC_AUTH_USER in .env}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?set BASIC_AUTH_HASH in .env}
+    volumes:
+      - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data        # certificates and ACME account (must persist)
+      - caddy-config:/config
+    networks:
+      frontend:
+        ipv4_address: 172.28.53.10
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+
+  searxng:
+    image: docker.io/searxng/searxng:${SEARXNG_VERSION:-latest}
+    container_name: quietsearch-searxng
+    restart: unless-stopped
+    depends_on:
+      valkey:
+        condition: service_healthy
+    # No "ports:" on purpose. Only caddy can reach this service.
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+      SEARXNG_BASE_URL: https://${SEARXNG_HOSTNAME}/
+      SEARXNG_VALKEY_URL: valkey://valkey:6379/0
+      # Config files are mounted read-only and stay owned by you; skip the
+      # image's chown of /etc/searxng.
+      FORCE_OWNERSHIP: "false"
+    volumes:
+      - ./searxng:/etc/searxng:ro
+      - searxng-cache:/var/cache/searxng
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "/usr/local/searxng/.venv/bin/python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID]
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+
+  valkey:
+    image: docker.io/valkey/valkey:${VALKEY_VERSION:-9-alpine}
+    container_name: quietsearch-valkey
+    restart: unless-stopped
+    # Holds only short-lived rate-limiter counters, so persistence is off and
+    # memory is capped. Nothing here needs a backup.
+    command: >
+      valkey-server
+      --save ""
+      --appendonly no
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
+      --loglevel warning
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+
+networks:
+  frontend:
+    # Fixed subnet so the SearXNG limiter can trust X-Forwarded-For from caddy
+    # (see searxng/limiter.toml). Chosen to avoid the AWS default VPC
+    # (172.31.0.0/16) and common home LAN ranges.
+    ipam:
+      config:
+        - subnet: 172.28.53.0/24
+  backend:
+    # internal: no route to the internet. Valkey can talk only to SearXNG.
+    internal: true
+
+volumes:
+  caddy-data:
+  caddy-config:
+  searxng-cache:

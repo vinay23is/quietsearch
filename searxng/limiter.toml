@@ -1,0 +1,41 @@
+# SearXNG bot detection / rate limiter configuration.
+# Mounted at /etc/searxng/limiter.toml. Anything not set here falls back to
+# the upstream defaults shipped inside the image.
+# Reference: https://docs.searxng.org/admin/searx.limiter.html
+
+[botdetection]
+
+# Only the caddy container (fixed IP on the frontend network, see
+# docker-compose.yml) may supply the real client address via X-Forwarded-For.
+# Any other source sending that header is ignored, so clients cannot spoof
+# their IP to dodge rate limits.
+trusted_proxies = [
+  '172.28.53.10/32',
+]
+
+# Count IPv4 clients individually and IPv6 clients by /48 network (one
+# household/ISP allocation), matching upstream defaults.
+ipv4_prefix = 32
+ipv6_prefix = 48
+
+[botdetection.ip_limit]
+
+# Requests from link-local addresses are still checked.
+filter_link_local = false
+
+# Off: link_token makes browsers load a per-session CSS token before searching.
+# It helps public instances filter scripted traffic, but it would block the
+# JSON API client on this auth-protected private instance.
+link_token = false
+
+[botdetection.ip_lists]
+
+# Addresses here bypass every bot check (e.g. a trusted home network).
+pass_ip = []
+
+# Addresses here are always rejected.
+block_ip = []
+
+# Don't give the SearXNG project's monitoring hosts a free pass; this is
+# a private instance.
+pass_searxng_org = false

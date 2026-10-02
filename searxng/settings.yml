@@ -1,0 +1,112 @@
+# Quietsearch: SearXNG instance configuration
+# Mounted read-only at /etc/searxng/settings.yml.
+#
+# Strategy: inherit upstream defaults and override only what this instance
+# changes. That keeps the file short and upgrades painless, because new
+# upstream defaults apply automatically.
+# Reference: https://docs.searxng.org/admin/settings/index.html
+#
+# Secrets are NOT stored here. server.secret_key comes from SEARXNG_SECRET,
+# and the Valkey URL comes from SEARXNG_VALKEY_URL (see docker-compose.yml).
+
+use_default_settings:
+  engines:
+    # Load only these upstream engines. Fewer engines means fewer outbound
+    # requests per query, a smaller attack/fingerprint surface and faster
+    # pages. Per-engine overrides are in the "engines:" section at the bottom.
+    keep_only:
+      # general web
+      - duckduckgo
+      - brave
+      - bing
+      - google            # kept but disabled by default (see below)
+      - wikipedia
+      - wikidata
+      - currency
+      # images
+      - duckduckgo images
+      - bing images
+      - brave.images
+      # videos
+      - youtube
+      - duckduckgo videos
+      - brave.videos
+      - vimeo
+      # news
+      - duckduckgo news
+      - bing news
+      - brave.news
+      # IT / developer
+      - github
+      - stackoverflow
+      - mdn
+      - pypi
+      - docker hub
+      # science and maps
+      - arxiv
+      - openstreetmap
+
+general:
+  debug: false
+  instance_name: "Quietsearch"
+  privacypolicy_url: false
+  donation_url: false
+  contact_url: false
+  # In-process engine statistics shown on /stats. Never leaves the server.
+  enable_metrics: true
+
+search:
+  # 0 = off, 1 = moderate, 2 = strict. Each user can still change it in Preferences.
+  safe_search: 1
+  # Autocomplete sends each partial query to an upstream provider as you type.
+  # Off by default for privacy; users can opt in under Preferences.
+  autocomplete: ""
+  # Favicons would mean an extra third-party lookup per result domain.
+  favicon_resolver: ""
+  default_lang: "auto"
+  # html = browser UI, json = API for scripts/CLI. csv/rss are not needed.
+  formats:
+    - html
+    - json
+
+server:
+  # Rate limiting and bot detection (backed by Valkey, configured in limiter.toml).
+  limiter: true
+  # Private instance: don't enable features meant for public instances.
+  public_instance: false
+  # Route result thumbnails through this server so the browser doesn't contact
+  # image hosts directly while you look at results.
+  image_proxy: true
+  # GET keeps result URLs bookmarkable and the back button working. POST would
+  # keep queries out of browser history, at a cost in usability.
+  method: "GET"
+
+ui:
+  default_theme: simple
+  theme_args:
+    # Follow the operating system's light/dark preference.
+    simple_style: auto
+  # Keep the query out of the tab title (and therefore browser history titles).
+  query_in_title: false
+  center_alignment: false
+  url_formatting: pretty
+
+outgoing:
+  # Per-engine time budget in seconds. Slow engines are dropped instead of
+  # holding up the whole result page.
+  request_timeout: 3.0
+  max_request_timeout: 8.0
+  pool_connections: 100
+  enable_http2: true
+
+engines:
+  # Bing web is disabled upstream by default. Enable it as a third general
+  # source alongside DuckDuckGo and Brave.
+  - name: bing
+    disabled: false
+
+  # Google aggressively blocks requests from datacenter IPs (CAPTCHAs), which
+  # would add timeouts to every query. Loaded but disabled; enable per-user
+  # in Preferences, or use the !go shortcut for a one-off query.
+  - name: google
+    disabled: true

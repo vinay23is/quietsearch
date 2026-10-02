@@ -1,0 +1,56 @@
+# --- Secrets and local configuration ----------------------------------------
+# Real environment values (secrets, hostnames, credentials). Only .env.example
+# is committed.
+.env
+.env.*
+!.env.example
+
+# Private keys, certificates and credential files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.htpasswd
+credentials*
+secrets/
+
+# --- Terraform -----------------------------------------------------------------
+# State files can contain resource details and sensitive values.
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/crash.log
+terraform/crash.*.log
+terraform/*.tfvars
+terraform/*.tfvars.json
+!terraform/terraform.tfvars.example
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
+terraform/.terraformrc
+terraform/terraform.rc
+# The provider lock file IS committed (pins provider versions/checksums).
+
+# --- Runtime data ----------------------------------------------------------------
+backups/
+*.log
+
+# --- Python --------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Editors / OS --------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
