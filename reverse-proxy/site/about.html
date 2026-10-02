@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>About this instance · Quietsearch</title>
+  <link rel="icon" href="/instance/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/instance/style.css">
+</head>
+<body>
+  <header>
+    <a href="/" aria-label="Quietsearch home"><img src="/instance/logo.svg" alt="Quietsearch"></a>
+    <nav><a href="/">Search</a><a href="/instance/privacy">Privacy</a></nav>
+  </header>
+
+  <main>
+    <h1>About this instance</h1>
+    <p class="lead">Quietsearch is a private, self-hosted search service for a
+      single user. It runs the open-source metasearch engine
+      <a href="https://github.com/searxng/searxng">SearXNG</a> behind a hardened
+      HTTPS reverse proxy.</p>
+
+    <h2>How it works</h2>
+    <p>SearXNG is a <strong>metasearch engine</strong>: it has no crawler and no
+      index of its own. Each search is sent, from this server, to several
+      search providers at once. Their results are merged, duplicates are
+      combined, and pages that several providers rank highly are moved up.</p>
+    <p>Providers see a request from this server, not from your browser. They
+      don't receive your IP address, cookies, or account, so they can't tie
+      your searches to you. They do still see the search terms. This is not
+      anonymity. The
+      <a href="/instance/privacy">privacy page</a> explains exactly what is and
+      isn't protected.</p>
+
+    <h2>Search providers</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Providers</th></tr></thead>
+      <tbody>
+        <tr><td>Web</td><td>DuckDuckGo, Brave, Bing, Wikipedia, Wikidata</td></tr>
+        <tr><td>Images</td><td>DuckDuckGo, Bing, Brave</td></tr>
+        <tr><td>Videos</td><td>YouTube, DuckDuckGo, Brave, Vimeo</td></tr>
+        <tr><td>News</td><td>DuckDuckGo, Bing, Brave</td></tr>
+        <tr><td>IT</td><td>GitHub, Stack Overflow, MDN, PyPI, Docker Hub</td></tr>
+        <tr><td>Science / maps</td><td>arXiv, OpenStreetMap</td></tr>
+      </tbody>
+    </table>
+    <p>Google is available but off by default, because it blocks requests from
+      servers. Use it for a single search by starting the query with
+      <code>!go</code>. You can turn providers on or off for your browser under
+      <a href="/preferences">Preferences</a>.</p>
+
+    <h2>Useful search syntax</h2>
+    <table>
+      <thead><tr><th>Type</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>!wp linux</code></td><td>Search one provider (here Wikipedia)</td></tr>
+        <tr><td><code>!images aurora</code></td><td>Search one category</td></tr>
+        <tr><td><code>:de kernel</code></td><td>Search in a specific language</td></tr>
+        <tr><td><code>10 km in mi</code></td><td>Unit conversion, shown above the results</td></tr>
+      </tbody>
+    </table>
+    <p>The full list is on SearXNG's <a href="/info/en/search-syntax">search
+      syntax page</a>.</p>
+
+    <h2>Defaults on this instance</h2>
+    <ul>
+      <li>SafeSearch: moderate (changeable in Preferences)</li>
+      <li>Autocomplete: off, so partial queries aren't sent anywhere as you type</li>
+      <li>Image previews: loaded through this server, not directly by your browser</li>
+      <li>Appearance: light or dark, following your device setting</li>
+    </ul>
+  </main>
+
+  <footer>
+    Search is powered by <a href="https://github.com/searxng/searxng">SearXNG</a>,
+    free software licensed under the AGPL-3.0. This instance runs an unmodified
+    SearXNG release; its configuration, deployment and these pages are
+    maintained separately.
+  </footer>
+</body>
+</html>

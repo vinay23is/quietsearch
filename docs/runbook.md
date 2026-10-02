@@ -19,6 +19,23 @@ or `reverse-proxy/Caddyfile` take effect after the
 container restarts. Caddy's admin API is disabled, so `caddy reload` is not
 available by design.
 
+## Customization
+
+Branding is layered on top of an unmodified SearXNG image:
+
+| What | Where | Applies |
+|---|---|---|
+| Instance name, footer links, privacy-policy link | `searxng/settings.yml` (`general`, `brand`) | `docker compose up -d --force-recreate searxng` |
+| About / Privacy pages, page styles | `reverse-proxy/site/*.html`, `style.css` | Immediately (Caddy serves the mounted files) |
+| Homepage logo, favicon | `reverse-proxy/site/logo.svg`, `favicon.svg` | Immediately; hard-refresh the browser |
+
+Caddy answers two upstream image URLs (`/static/themes/simple/img/searxng.png`
+and `favicon.svg`) with the files above. If a future SearXNG release renames
+them, the stock images reappear and nothing else changes. Changing the
+homepage text or result templates would require `ui.templates_path`, which
+replaces *all* templates and must then be re-synced on every upgrade; that's
+deliberately avoided.
+
 ## Status and logs
 
 ```bash

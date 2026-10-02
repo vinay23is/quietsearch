@@ -49,11 +49,21 @@ use_default_settings:
 general:
   debug: false
   instance_name: "Quietsearch"
-  privacypolicy_url: false
+  # Served by Caddy from reverse-proxy/site (SearXNG stays unmodified).
+  privacypolicy_url: "/instance/privacy"
   donation_url: false
   contact_url: false
   # In-process engine statistics shown on /stats. Never leaves the server.
   enable_metrics: true
+
+brand:
+  # Private instance: don't advertise the public instance directory.
+  # (Must be a string; an empty string hides the footer link.)
+  public_instances: ""
+  # Extra footer links, rendered by the stock template.
+  custom:
+    links:
+      About this instance: "/instance/about"
 
 search:
   # 0 = off, 1 = moderate, 2 = strict. Each user can still change it in Preferences.

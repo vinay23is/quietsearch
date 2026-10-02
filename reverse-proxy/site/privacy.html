@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Privacy · Quietsearch</title>
+  <link rel="icon" href="/instance/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/instance/style.css">
+</head>
+<body>
+  <header>
+    <a href="/" aria-label="Quietsearch home"><img src="/instance/logo.svg" alt="Quietsearch"></a>
+    <nav><a href="/">Search</a><a href="/instance/about">About</a></nav>
+  </header>
+
+  <main>
+    <h1>Privacy</h1>
+    <p class="lead">What this instance protects, what it doesn't, and what
+      each party involved can still see.</p>
+
+    <div class="note">This instance <strong>reduces</strong> how much individual
+      search providers learn about you. It does <strong>not</strong> make you
+      anonymous.</div>
+
+    <h2>What this server stores</h2>
+    <ul>
+      <li><strong>No accounts</strong> and no search history.</li>
+      <li><strong>No access logs.</strong> The reverse proxy writes no per-request
+        log, so search queries in URLs are never written to disk.</li>
+      <li>Application logs contain warnings and errors only (for example, a
+        provider timing out). Container logs are rotated at 30 MB per service.</li>
+      <li>Rate limiting keeps a short-lived, in-memory counter per IP address
+        (at most one minute).</li>
+      <li>Your preferences (theme, providers, SafeSearch) are stored in
+        <strong>cookies in your own browser</strong>, not on the server.</li>
+    </ul>
+
+    <h2>Who can see what</h2>
+    <table>
+      <thead><tr><th>Party</th><th>What they can still see</th></tr></thead>
+      <tbody>
+        <tr><td>Search providers (DuckDuckGo, Bing, Brave, ...)</td>
+            <td>The text of each query, sent from this server's IP address with a
+              generic browser identity. Not your IP, cookies, or account. On a
+              single-user instance, the server's IP effectively stands for you, so
+              a provider could still link queries that come from it. Every enabled
+              provider in a category receives each query in that category.</td></tr>
+        <tr><td>Hosting provider</td>
+            <td>The server's network traffic: which providers it contacts and
+              when. Your connection to the server is encrypted with HTTPS.</td></tr>
+        <tr><td>The operator of this instance</td>
+            <td>Anything the server could record. This instance is configured not
+              to log queries, but you are trusting that configuration.</td></tr>
+        <tr><td>Your internet provider / network</td>
+            <td>That you connect to this server's address and domain name, when,
+              and how much data. Not your queries.</td></tr>
+        <tr><td>DNS resolvers</td>
+            <td>Your resolver sees lookups for this instance's domain name, not
+              your queries.</td></tr>
+        <tr><td>Websites you open from results</td>
+            <td>Everything a normal visit reveals: your IP address, browser and
+              cookies. This instance hides the search page you came from (no
+              <code>Referer</code> header), but the visit itself is direct.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Built-in protections</h2>
+    <ul>
+      <li>HTTPS only, including HSTS; plain HTTP is redirected.</li>
+      <li>Image previews are fetched through this server, so image hosts don't
+        see your IP while you browse results.</li>
+      <li>Autocomplete is off by default. When turned on, each partial query is
+        sent to a provider as you type.</li>
+      <li>Tracking parameters (such as <code>utm_*</code>) are removed from result
+        links.</li>
+      <li>The search query is kept out of page titles, so it doesn't appear in
+        window titles or history titles.</li>
+    </ul>
+
+    <h2>If you need more</h2>
+    <p>To hide your IP address from websites you visit, or your use of this
+      instance from your network, use a VPN or Tor in addition to this service.</p>
+  </main>
+
+  <footer>
+    Search is powered by <a href="https://github.com/searxng/searxng">SearXNG</a>.
+    See also <a href="/instance/about">About this instance</a>.
+  </footer>
+</body>
+</html>

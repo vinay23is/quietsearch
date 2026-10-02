@@ -13,9 +13,9 @@ for a laptop, a home server or AWS EC2.
 SearXNG is a **metasearch engine**. It doesn't crawl or index the web. For
 each query it sends requests to several upstream engines (DuckDuckGo, Brave,
 Bing, Wikipedia, ...) from the server, then merges, deduplicates and ranks
-the results. Upstream providers see the server's IP, not yours, and no single
-provider sees your full search history. This is **not anonymity**; see
-`docs/privacy.md`.
+the results. Upstream providers see the server's IP and a generic browser
+identity, never your IP, cookies or accounts, but they do still see the search
+terms. This is **not anonymity**; see [docs/privacy.md](docs/privacy.md).
 
 ```
 Browser ──HTTPS──▶ Caddy (TLS, rate limits, auth, headers) ──▶ SearXNG ──▶ upstream engines
@@ -42,6 +42,7 @@ Operations, logs and troubleshooting are covered in [docs/runbook.md](docs/runbo
 | `searxng/settings.yml` | Instance configuration (overrides upstream defaults) |
 | `reverse-proxy/Caddyfile` | TLS, HTTP→HTTPS redirect, rate limits, basic auth, security headers |
 | `reverse-proxy/Dockerfile` | Caddy build with the rate-limit module |
+| `reverse-proxy/site/` | Instance branding: About and Privacy pages, logo, favicon (served by Caddy; SearXNG stays unmodified) |
 | `scripts/` | Setup, start/stop, health checks, backups |
 | `client/` | Python CLI for the JSON search API |
 | `terraform/` | Optional AWS provisioning |
