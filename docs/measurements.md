@@ -15,6 +15,8 @@ Date: 2026-10-02. SearXNG `2026.10.2-19ffbcd30`, Caddy `2.10-alpine`, Valkey `9-
 | JSON search, cold (first query after start) | 4.74s, 0 results (all engines timed out) | `curl -w %{time_total}` via Caddy |
 | JSON search, warm (`q=linux kernel`) | 1.46s, 13 results | `curl -w %{time_total}` via Caddy |
 | Engines contributing (warm query) | duckduckgo 11, bing 10 (8 URLs merged) | `engines` field in JSON response |
+| Idle memory per container | searxng 120.9 MiB, caddy 13.8 MiB, valkey 9.4 MiB (~144 MiB total) | `docker stats --no-stream` after restart |
+| Idle CPU | <1% per container | `docker stats --no-stream` |
 | Configured engines | 24 loaded (23 enabled, google disabled) | `searxng/settings.yml` |
 
 Notes:

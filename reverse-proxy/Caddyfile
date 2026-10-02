@@ -39,6 +39,12 @@
 		reverse_proxy searxng:8080
 	}
 
+	# Searches and preference changes are a few KB at most. Reject large
+	# bodies before they reach SearXNG.
+	request_body {
+		max_size 1MB
+	}
+
 	encode zstd gzip
 
 	header {
