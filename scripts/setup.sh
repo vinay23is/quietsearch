@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 
 HOSTNAME_ARG="${1:-localhost}"
 EMAIL_ARG="${2:-you@example.com}"
-CADDY_IMAGE="docker.io/library/caddy:2.10-alpine"
+CADDY_IMAGE="docker.io/library/caddy:2.10.2-alpine"
 
 info()  { printf '\033[1;34m[setup]\033[0m %s\n' "$*"; }
 fail()  { printf '\033[1;31m[setup] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }

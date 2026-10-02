@@ -23,6 +23,31 @@
 #     for a public domain, or from its own local CA for "localhost")
 #   - redirects http:// to https:// on port 80
 {$SEARXNG_HOSTNAME} {
+	# Per-client rate limits (caddy-ratelimit module, see Dockerfile).
+	# Runs BEFORE basic_auth, so it also caps password-guessing attempts and
+	# the CPU spent on bcrypt checks. Exceeding a limit returns HTTP 429 with
+	# a Retry-After header.
+	rate_limit {
+		# Searches fan out to every enabled upstream engine, so they're the
+		# expensive requests, and the ones that get the server IP blocked
+		# upstream if abused.
+		zone search {
+			match {
+				path /search /autocompleter
+			}
+			key {remote_host}
+			events 30
+			window 1m
+		}
+		# All requests, including pages, static assets, image thumbnails and
+		# failed logins. Searches count toward both zones.
+		zone all {
+			key {remote_host}
+			events 120
+			window 1m
+		}
+	}
+
 	# Docker healthchecks and uptime probes can call /healthz without credentials.
 	# It returns only "OK".
 	@health path /healthz

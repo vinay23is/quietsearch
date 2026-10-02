@@ -23,12 +23,12 @@ responsibility), and anonymity against the instance operator.
 
 | Threat | Example | Mitigations |
 |---|---|---|
-| Unauthorized use | Bots find the instance, burn its IP reputation, get it blocked upstream | Basic auth on every route except `/healthz`; SearXNG limiter; not listed in public instance directories |
-| Internal service exposure | Valkey or SearXNG reachable from the internet | No published ports except Caddy; `internal: true` backend network; firewall/security group allows only 80/443 (+22 restricted) |
+| Unauthorized use | Bots find the instance, burn its IP reputation, get it blocked upstream | Basic auth on every route except `/healthz`; per-client rate limits at the proxy; not listed in public instance directories |
+| Internal service exposure | SearXNG reachable from the internet without TLS or auth | No published ports except Caddy; private Docker network; firewall/security group allows only 80/443 (+22 restricted) |
 | Eavesdropping | Queries read on public Wi-Fi | HTTPS only, HSTS, HTTP→HTTPS redirect |
 | Credential/secret leak | `.env`, keys or state committed to GitHub | `.gitignore`, `.env.example` pattern, pre-commit checks, password stored only as a bcrypt hash |
-| Brute force | Password guessing against basic auth or SSH | bcrypt (cost 14) slows each guess; 12-character minimum; SSH key-only, restricted by source IP (see Host hardening) |
-| Container compromise | Exploit in Caddy or SearXNG | Dropped capabilities, `no-new-privileges`, read-only Caddy filesystem, Valkey isolated with no internet access |
+| Brute force | Password guessing against basic auth or SSH | Proxy rate limit (120 requests/min per client, applied before auth); bcrypt (cost 14); 12-character minimum; SSH key-only, restricted by source IP (see Host hardening) |
+| Container compromise | Exploit in Caddy or SearXNG | Dropped capabilities, `no-new-privileges`, read-only Caddy filesystem, read-only config mounts |
 | Outdated software | CVE in an image | Pinned versions, documented upgrade/rollback, OS security updates |
 | Cost abuse | Forgotten or hijacked cloud resources | No long-lived AWS keys on the server, billing alarm, documented teardown (see deployment.md) |
 
@@ -46,16 +46,16 @@ responsibility), and anonymity against the instance operator.
 
 | | |
 |---|---|
-| **What** | Only the `caddy` service has `ports:`. SearXNG (8080) and Valkey (6379) are reachable only over Docker networks. Locally, ports bind to `127.0.0.1`. |
-| **Why** | One hardened, purpose-built component faces the internet. SearXNG's built-in server isn't designed to face the internet directly, and Valkey has no authentication configured. |
+| **What** | Only the `caddy` service has `ports:`. SearXNG (8080) is reachable only over the private Docker network. Locally, ports bind to `127.0.0.1`. |
+| **Why** | One hardened, purpose-built component faces the internet. SearXNG's built-in server isn't designed to face the internet directly. |
 | **Where** | `docker-compose.yml` |
 
-### Network segmentation
+### Network design
 
 | | |
 |---|---|
-| **What** | Two networks. `frontend` (Caddy ↔ SearXNG, internet egress for upstream engines). `backend`, marked `internal: true` (SearXNG ↔ Valkey, no route to the internet). |
-| **Why** | Valkey can't be reached by Caddy, and couldn't send data out even if compromised. Each component can talk only to what it needs. |
+| **What** | One private bridge network (`quietsearch`) shared by Caddy and SearXNG. SearXNG needs outbound internet access to query upstream engines; nothing else runs on the network. |
+| **Why** | Two containers with a single trust relationship (Caddy → SearXNG) don't need further segmentation. An earlier design added an internal-only network for a Valkey rate-limit store; it was removed together with Valkey (see Rate limiting). |
 | **Where** | `docker-compose.yml` → `networks:` |
 
 ### Authentication
@@ -70,10 +70,10 @@ responsibility), and anonymity against the instance operator.
 
 | | |
 |---|---|
-| **What** | SearXNG's limiter, with state in Valkey. Rejects clients without normal HTTP headers and limits request bursts per client (each IPv4 address, or each IPv6 `/48` network). Only Caddy's fixed container IP is trusted to supply the real client IP via `X-Forwarded-For`. |
-| **Why** | Defense in depth behind authentication. A leaked password or a runaway script can't flood upstream engines from this IP. Trusting only Caddy's IP stops clients from spoofing `X-Forwarded-For` to dodge limits. |
-| **Trade-off** | API clients must send a non-bot `User-Agent` plus `Accept`, `Accept-Language` and `Accept-Encoding` headers (see runbook.md). |
-| **Where** | `searxng/settings.yml` (`server.limiter`), `searxng/limiter.toml` |
+| **What** | Caddy's `rate_limit` handler (the caddy-ratelimit module, compiled into a custom image). Per client IP: 30 searches/minute (`/search`, `/autocompleter`) and 120 requests/minute overall. Excess requests get HTTP 429 with `Retry-After`. |
+| **Why** | Each search fans out to every enabled upstream engine, so a runaway script or leaked password could get the server IP blocked upstream. The limit runs before `basic_auth`, so it also caps password guessing and the CPU spent on bcrypt checks. |
+| **Design decision** | SearXNG ships its own limiter (backed by Valkey), used in the first version of this project. Testing showed it's built for anonymous public instances: it rejects non-browser clients and hard-codes a quota of 4 JSON API requests per IP per hour, which made the API unusable. On an authenticated private instance, rate limiting belongs at the edge, so the SearXNG limiter is off and Valkey was removed. |
+| **Where** | `reverse-proxy/Caddyfile`, `reverse-proxy/Dockerfile` |
 
 ### Security headers
 
@@ -133,15 +133,15 @@ pushed to GitHub as permanently exposed.
 - Caddy admin API disabled (`admin off`).
 - SearXNG `debug: false`; `open_metrics` left empty, so `/metrics` is disabled.
 - `/stats` and `/config` are behind authentication.
-- Valkey has no published port and no internet route.
+- SearXNG has no published port.
 
 ## Update strategy
 
 | Component | Pinned as | How to update |
 |---|---|---|
 | SearXNG | exact build tag in `.env` (`SEARXNG_VERSION`) | Change the tag, `./scripts/start.sh`, run the checks below; roll back by restoring the old tag |
-| Caddy | minor version (`2.10-alpine`) | Patch releases arrive on `docker compose pull`; bump the minor version deliberately |
-| Valkey | major version (`9-alpine`) | Same as Caddy. Holds no persistent data, so upgrades are risk-free |
+| Caddy | exact release in `.env` (`CADDY_VERSION`, used as the image build argument) | Change the version and run `./scripts/start.sh`, which rebuilds the image |
+| caddy-ratelimit module | git commit in `reverse-proxy/Dockerfile` | Check the module's repository; bump the commit and rebuild (`./scripts/start.sh`) |
 | Host OS (EC2) | Ubuntu LTS | `unattended-upgrades` for security patches |
 
 Check upstream releases roughly monthly, and immediately for announced CVEs.
@@ -178,15 +178,11 @@ curl -sk -u "quiet:$QS_PASS" -D - -o /dev/null https://localhost/ \
 # Only Caddy publishes ports, and only on 127.0.0.1 locally
 docker compose ps --format '{{.Name}}\t{{.Ports}}'
 
-# Valkey has no internet access (expect failure)
-docker compose exec valkey wget -q -T 3 -O /dev/null https://example.com && echo "UNEXPECTED: valkey has internet" || echo "valkey: no internet (good)"
-
-# Caddy cannot reach Valkey (expect failure: different network)
-docker compose exec caddy nc -z -w 3 valkey 6379 && echo "UNEXPECTED: caddy reached valkey" || echo "caddy cannot reach valkey (good)"
-
 # Caddy's root filesystem is read-only (expect failure)
 docker compose exec caddy touch /etc/test && echo "UNEXPECTED: writable" || echo "caddy rootfs read-only (good)"
 
-# Default curl User-Agent is rejected by the limiter (expect 429)
-curl -sk -u "quiet:$QS_PASS" -o /dev/null -w "%{http_code}\n" "https://localhost/search?q=test&format=json"
+# Rate limit: 35 rapid searches, expect some 429s after the first 30
+for i in $(seq 1 35); do curl -sk -o /dev/null -w '%{http_code}\n' "https://localhost/search?q=x"; done | sort | uniq -c
 ```
+
+All of the above is automated in `tests/security_check.sh`.

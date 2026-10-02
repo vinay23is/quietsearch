@@ -15,7 +15,7 @@ repository root.
 | Apply config changes | `docker compose up -d --force-recreate searxng caddy` |
 
 Config files are bind-mounted read-only, so changes to `searxng/settings.yml`,
-`searxng/limiter.toml` or `reverse-proxy/Caddyfile` take effect after the
+or `reverse-proxy/Caddyfile` take effect after the
 container restarts. Caddy's admin API is disabled, so `caddy reload` is not
 available by design.
 
@@ -40,25 +40,26 @@ in URLs are never written there. SearXNG logs warnings and errors only.
 ```bash
 docker compose config --quiet && echo "compose OK"
 
-# Caddyfile syntax (uses the same image as production).
-# A throwaway hash is generated on the fly so no hash-like string lives in the repo.
-TEST_HASH="$(docker run --rm caddy:2.10-alpine caddy hash-password --plaintext throwaway)"
+# Caddyfile syntax. Uses the project's own Caddy image (stock Caddy doesn't
+# know the rate_limit directive). A throwaway hash is generated on the fly so
+# no hash-like string lives in the repo.
+docker compose build caddy
+IMG="$(docker compose config --images | grep quietsearch-caddy)"
+TEST_HASH="$(docker run --rm "$IMG" caddy hash-password --plaintext throwaway)"
 docker run --rm \
   -e SEARXNG_HOSTNAME=localhost -e ACME_EMAIL=a@example.org \
   -e BASIC_AUTH_USER=u -e BASIC_AUTH_HASH="$TEST_HASH" \
   -v "$PWD/reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-  caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile
+  "$IMG" caddy validate --config /etc/caddy/Caddyfile
 
-# YAML / TOML syntax
+# YAML syntax
 python3 -c "import yaml,sys; yaml.safe_load(open('searxng/settings.yml')); print('settings.yml OK')"
-python3 -c "import tomllib; tomllib.load(open('searxng/limiter.toml','rb')); print('limiter.toml OK')"
 ```
 
 ## Quick functional checks
 
-The SearXNG limiter rejects requests that don't look like a browser or a
-well-behaved API client. When testing with curl, send a non-default
-User-Agent plus `Accept`, `Accept-Language` and `Accept-Encoding`:
+Read the password into a variable first, so it stays out of shell history:
+`read -rs 'QS_PASS?Password: '` (zsh) or `read -rsp 'Password: ' QS_PASS` (bash).
 
 ```bash
 # Unauthenticated health endpoint
@@ -67,13 +68,15 @@ curl -sk https://localhost/healthz                         # -> OK
 # Auth is enforced
 curl -sk -o /dev/null -w "%{http_code}\n" https://localhost/          # -> 401
 
-# JSON search (replace PASSWORD)
-curl -sk --compressed -u quiet:PASSWORD \
-  -H "User-Agent: quietsearch-cli/0.1" \
-  -H "Accept: application/json, text/html;q=0.5" \
-  -H "Accept-Language: en-US,en;q=0.8" \
-  "https://localhost/search?q=distributed+systems&format=json" \
+# JSON search
+curl -sk -u "quiet:$QS_PASS" "https://localhost/search?q=distributed+systems&format=json" \
   | python3 -m json.tool | head -40
+
+# Engine diagnostics: configured engines, per-category probes, failures
+QS_PASS="$QS_PASS" ./tests/engine_report.py --insecure
+
+# Security controls
+./tests/security_check.sh
 ```
 
 `-k` skips certificate verification, which is needed locally because the cert
@@ -95,8 +98,7 @@ again when you no longer need it. `*.crt` is git-ignored.
 | `required variable SEARXNG_SECRET is missing` | `.env` missing or incomplete | `./scripts/setup.sh`, or fill in `.env` |
 | `Bind for 127.0.0.1:443 failed: port is already allocated` | Something else is using 80/443 | `lsof -nP -iTCP:443 -sTCP:LISTEN` and stop it |
 | Browser keeps asking for a password | Wrong password, or a bad hash in `.env` | The hash must be single-quoted in `.env`. Rerun `setup.sh` after deleting `.env`. |
-| `429 Too Many Requests` from curl | Limiter: default curl User-Agent or missing headers | Send the headers shown above |
-| `429` after many fast searches | Limiter `ip_limit` burst protection | Wait a minute; this is expected behaviour |
+| `429 Too Many Requests` | Caddy rate limit: more than 30 searches or 120 requests per minute from one client | Wait for the `Retry-After` period (up to 1 minute); expected behaviour |
 | Results page shows "Engines cannot retrieve results" | Upstream engine blocked or timed out (CAPTCHA, 403, 429) | `docker compose logs searxng \| grep -i -E "captcha\|denied\|timeout"`. Engines are suspended for a while automatically, then retried. |
 | First search after a restart returns 0 results (all engines "timeout") | Cold start: new DNS + TLS connections to every engine must fit in the 3s per-engine timeout | Search again. Connections are reused after the first query. |
 | `brave: Suspended: too many requests` | Brave rate-limited the server IP (HTTP 429) | Nothing; SearXNG retries Brave after 180s. Persistent? Disable it in `settings.yml`. |

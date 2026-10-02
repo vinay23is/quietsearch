@@ -18,9 +18,7 @@ provider sees your full search history. This is **not anonymity**; see
 `docs/privacy.md`.
 
 ```
-Browser ──HTTPS──▶ Caddy (TLS, auth, headers) ──▶ SearXNG ──▶ upstream engines
-                                                      │
-                                                      └──▶ Valkey (rate-limit state, internal network only)
+Browser ──HTTPS──▶ Caddy (TLS, rate limits, auth, headers) ──▶ SearXNG ──▶ upstream engines
 ```
 
 ## Quick start (local)
@@ -42,8 +40,8 @@ Operations, logs and troubleshooting are covered in [docs/runbook.md](docs/runbo
 |---|---|
 | `docker-compose.yml` | Services, networks, health checks, hardening |
 | `searxng/settings.yml` | Instance configuration (overrides upstream defaults) |
-| `searxng/limiter.toml` | Bot detection and rate limiting |
-| `reverse-proxy/Caddyfile` | TLS, HTTP→HTTPS redirect, basic auth, security headers |
+| `reverse-proxy/Caddyfile` | TLS, HTTP→HTTPS redirect, rate limits, basic auth, security headers |
+| `reverse-proxy/Dockerfile` | Caddy build with the rate-limit module |
 | `scripts/` | Setup, start/stop, health checks, backups |
 | `client/` | Python CLI for the JSON search API |
 | `terraform/` | Optional AWS provisioning |

@@ -11,7 +11,10 @@ echo "[start] Validating docker-compose.yml + .env"
 docker compose config --quiet
 
 echo "[start] Pulling images (no-op if already present)"
-docker compose pull --quiet
+docker compose pull --quiet --ignore-buildable
+
+echo "[start] Building the reverse-proxy image (~90s the first time, cached afterwards)"
+docker compose build caddy
 
 echo "[start] Starting containers"
 docker compose up -d --remove-orphans

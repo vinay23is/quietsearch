@@ -6,8 +6,8 @@
 # upstream defaults apply automatically.
 # Reference: https://docs.searxng.org/admin/settings/index.html
 #
-# Secrets are NOT stored here. server.secret_key comes from SEARXNG_SECRET,
-# and the Valkey URL comes from SEARXNG_VALKEY_URL (see docker-compose.yml).
+# Secrets are NOT stored here. server.secret_key comes from SEARXNG_SECRET
+# (see docker-compose.yml).
 
 use_default_settings:
   engines:
@@ -70,8 +70,11 @@ search:
     - json
 
 server:
-  # Rate limiting and bot detection (backed by Valkey, configured in limiter.toml).
-  limiter: true
+  # SearXNG's built-in limiter is designed for anonymous public instances: it
+  # rejects non-browser clients and hard-codes a quota of 4 API (JSON)
+  # requests per IP per hour. This instance is behind authentication, so rate
+  # limiting is done in the reverse proxy instead (reverse-proxy/Caddyfile).
+  limiter: false
   # Private instance: don't enable features meant for public instances.
   public_instance: false
   # Route result thumbnails through this server so the browser doesn't contact
