@@ -45,7 +45,7 @@ Date: 2026-10-02. Same machine and network as above.
 
 Notes:
 - Brave (web, images, videos, news) answered HTTP 429 and was suspended on
-  every probe: Brave rate-limits this home IP. To be compared from AWS.
+  every probe: Brave rate-limits this home IP.
 - Google answered "access denied" to an explicit `!go` query.
 - Videos: duckduckgo videos and vimeo timed out at 3s on the first video query
   after a restart.
@@ -67,5 +67,5 @@ Notes:
   duckduckgo returned a CAPTCHA (SearXNG suspends it for 1 hour), brave
   HTTP 429, bing a connection error. Repeated test runs from one residential
   IP are enough to trigger this; it's the main operational risk of a
-  single-IP metasearch instance. Compare from AWS (Phase 7).
+  single-IP metasearch instance.
 

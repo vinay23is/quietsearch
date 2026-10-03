@@ -52,6 +52,31 @@ Logs use Docker's `json-file` driver, rotated at 10 MB × 3 files per container
 What you won't find in the logs: Caddy has no access log, so search queries
 in URLs are never written there. SearXNG logs warnings and errors only.
 
+## Health report
+
+`./scripts/healthcheck.sh` checks the running stack from the outside and
+exits non-zero if anything is wrong:
+
+| Check | Fails when |
+|---|---|
+| Container state, health, restart count | A container is missing, stopped or unhealthy |
+| `https://<host>/healthz` and response time | Not HTTP 200 |
+| HTTP → HTTPS redirect | Not HTTP 308 |
+| TLS certificate expiry | Public cert within 14 days of expiry (Caddy's local 12-hour certs: within 1 hour) |
+| CPU / memory per container, Docker disk usage | Informational |
+| Disk usage of the filesystem holding the repo | 85% or more |
+| Error lines in container logs (15 min) | Informational; upstream engine errors are normal |
+
+`--quiet` prints only failures, which suits cron:
+
+```bash
+*/5 * * * * cd /path/to/quietsearch && ./scripts/healthcheck.sh --quiet >> healthcheck.log 2>&1
+```
+
+Restart behaviour: both services use `restart: unless-stopped`, so Docker
+restarts them after a crash and after a host reboot (as long as the Docker
+daemon starts at boot), unless they were stopped deliberately.
+
 ## Validating configuration
 
 ```bash
