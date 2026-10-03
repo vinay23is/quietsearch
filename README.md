@@ -85,8 +85,8 @@ More detail: [architecture](docs/architecture.md) ·
   proxied through the server, tracking parameters stripped from result links
 - **JSON API + CLI**: `client/search_client.py` with distinct exit codes for
   each failure mode
-- **Branding** (logo, About and Privacy pages, dark mode) without modifying
-  SearXNG
+- **Instance pages and branding** (name, About and Privacy pages, footer
+  links, dark mode) without modifying SearXNG
 - **Operational tooling**: setup/start/stop scripts, health report, engine
   diagnostics, automated security checks
 - **CI**: lint, unit tests, and a full build-start-verify run of the stack on
@@ -134,7 +134,7 @@ different hostname: see [docs/deployment.md](docs/deployment.md).
 | `.env` (from `.env.example`, git-ignored) | Hostname, listen address, secret, password hash, pinned image versions |
 | `searxng/settings.yml` | Engines, categories, SafeSearch, autocomplete, formats, branding links. Contains only changes from upstream defaults (`use_default_settings`) |
 | `reverse-proxy/Caddyfile` | TLS, redirect, rate limits, authentication, headers, static pages |
-| `reverse-proxy/site/` | About/Privacy pages, logo, favicon |
+| `reverse-proxy/site/` | About and Privacy pages |
 
 Enable or disable an engine for everyone in `searxng/settings.yml`, then
 `docker compose up -d --force-recreate searxng`. Users can also toggle engines
@@ -216,7 +216,7 @@ Response format and options: [docs/api.md](docs/api.md).
 ├── reverse-proxy/
 │   ├── Caddyfile               TLS, rate limits, auth, headers, static pages
 │   ├── Dockerfile              Caddy build with the rate-limit module
-│   └── site/                   About/Privacy pages, logo, favicon
+│   └── site/                   About and Privacy pages
 ├── scripts/                    setup, start, stop, healthcheck
 ├── client/                     Python CLI for the JSON API
 ├── tests/                      security checks, engine diagnostics, unit tests

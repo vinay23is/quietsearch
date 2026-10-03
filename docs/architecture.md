@@ -40,7 +40,7 @@ certificates, SearXNG's engine cache).
    limits password guessing.
 4. **Authentication**: HTTP basic auth checked against a bcrypt hash;
    `401` on failure. `/healthz` is the only unauthenticated path.
-5. `/instance/*`, the homepage logo and the favicon are served by Caddy from
+5. `/instance/*` (About and Privacy pages) is served by Caddy from
    `reverse-proxy/site`. Everything else is proxied to `searxng:8080`.
 6. SearXNG parses the query (`!bangs`, `:language`, `<timeout`), picks the
    engines for the requested category, and sends one request per engine in
@@ -93,7 +93,7 @@ fixes to engine definitions arrive automatically on upgrade.
 
 ### Branding without modifying SearXNG
 
-The About/Privacy pages and the logo are static files served by Caddy, linked
+The About/Privacy pages are static files served by Caddy, linked
 through SearXNG's supported `brand` and `privacypolicy_url` settings. Changing
 SearXNG's own templates would require copying the whole template directory
 (`ui.templates_path`) and re-syncing it on every upgrade, so that was avoided.

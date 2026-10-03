@@ -62,25 +62,12 @@
 			{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
 		}
 
-		# Instance branding, served by Caddy from reverse-proxy/site so that
-		# SearXNG itself stays an unmodified upstream image:
-		#   /instance/about, /instance/privacy  own pages (footer links in settings.yml)
-		#   homepage logo and favicon           replace two upstream image URLs
-		# If an upgrade renames those image paths, the stock SearXNG images
-		# simply show again; nothing breaks.
+		# Instance pages (/instance/about, /instance/privacy), served by Caddy
+		# from reverse-proxy/site so that SearXNG itself stays an unmodified
+		# upstream image. They're linked from SearXNG's footer via settings.yml.
 		handle_path /instance/* {
 			root * /srv/site
 			try_files {path} {path}.html
-			file_server
-		}
-		handle /static/themes/simple/img/searxng.png {
-			root * /srv/site
-			rewrite * /logo.svg
-			file_server
-		}
-		handle /static/themes/simple/img/favicon.svg {
-			root * /srv/site
-			rewrite * /favicon.svg
 			file_server
 		}
 
