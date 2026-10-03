@@ -12,8 +12,6 @@ SearXNG itself is an upstream project; this repository is the system built
 around it: architecture, configuration, containerization, proxy and TLS
 setup, security hardening, tooling, tests and documentation.
 
-![Quietsearch homepage](docs/screenshots/home.png)
-
 ## Contents
 
 - [Problem](#problem)
@@ -27,7 +25,6 @@ setup, security hardening, tooling, tests and documentation.
 - [Testing](#testing)
 - [Search API and CLI](#search-api-and-cli)
 - [Repository layout](#repository-layout)
-- [Screenshots](#screenshots)
 - [Known limitations](#known-limitations)
 - [Future work](#future-work)
 - [Credits](#credits)
@@ -224,12 +221,6 @@ Response format and options: [docs/api.md](docs/api.md).
 │                               runbook, API, SearXNG internals, measurements
 └── .github/workflows/ci.yml    CI pipeline
 ```
-
-## Screenshots
-
-| Results | About page (dark mode) |
-|---|---|
-| ![Search results](docs/screenshots/results.png) | ![About page](docs/screenshots/about-dark.png) |
 
 ## Known limitations
 
