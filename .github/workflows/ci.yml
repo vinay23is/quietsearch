@@ -49,14 +49,18 @@ jobs:
 
       - name: Create CI environment file
         # Throwaway credentials that exist only for this job.
+        # Compose refuses to parse the file while required values are empty, so
+        # the password hash comes from the stock Caddy image of the same version
+        # (the custom image can't be built until .env is complete).
         run: |
           cp .env.example .env
-          docker compose build caddy
-          IMAGE="$(docker compose config --images | grep quietsearch-caddy)"
-          HASH="$(docker run --rm "$IMAGE" caddy hash-password --plaintext "ci-$(openssl rand -hex 8)")"
+          CADDY_VERSION="$(awk -F= '$1=="CADDY_VERSION"{print $2}' .env)"
+          HASH="$(docker run --rm "docker.io/library/caddy:${CADDY_VERSION}-alpine" \
+                  caddy hash-password --plaintext "ci-$(openssl rand -hex 8)")"
           sed -i "s|^SEARXNG_SECRET=.*|SEARXNG_SECRET=$(openssl rand -hex 32)|" .env
           sed -i "s|^BASIC_AUTH_HASH=.*|BASIC_AUTH_HASH='$HASH'|" .env
           docker compose config --quiet
+          docker compose build caddy
 
       - name: Validate Caddyfile
         run: |
